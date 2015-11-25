@@ -1,0 +1,19 @@
+{
+  "name": "cordova-plugin-ad-gap",
+  "version": "1.0.0",
+  "description": "show ads in your cordova app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/txchen/ad-gap.git"
+  },
+  "author": "Tianxiang Chen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/txchen/ad-gap/issues"
+  },
+  "homepage": "https://github.com/txchen/ad-gap#readme"
+}
