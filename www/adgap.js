@@ -1,7 +1,7 @@
 /*global cordova, module*/
 
 module.exports = {
-    getIMEI: function (name, successCallback, errorCallback) {
+    getIMEI: function (successCallback, errorCallback) {
         cordova.exec(successCallback, errorCallback, "Adgap", "getIMEI", []);
     }
 };
