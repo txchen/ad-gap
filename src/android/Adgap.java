@@ -1,4 +1,4 @@
-package com.txchen.adgap;
+package com.adgap;
 
 import org.apache.cordova.*;
 import android.content.Context;
