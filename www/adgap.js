@@ -41,27 +41,27 @@ function deepmerge(target, src) {
 }
 
 function formatDate(d) {
-  return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '-' +
+  return d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '-' +
     ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2) +
     '.' + ('0' + d.getMilliseconds()).slice(-3)
 }
 
 module.exports = {
   ///////////////   misc functions
-  getIMEI: function (successCallback, errorCallback) {
-    cordova.exec(successCallback, errorCallback, 'Adgap', 'getIMEI', [])
+  getSystemInfo: function (successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, 'Adgap', 'getSystemInfo', [])
   },
 
   delayedEvent: function () {
     cordova.exec(function (status) {
-        if (status) {
-          console.log('got delayedEvent from java')
-          console.log(status)
-          cordova.fireWindowEvent("delayedevent", status);
-        } else {
-          console.log('got empty status from java')
-        }
-      },
+      if (status) {
+        console.log('got delayedEvent from java')
+        console.log(status)
+        cordova.fireWindowEvent("delayedevent", status);
+      } else {
+        console.log('got empty status from java')
+      }
+    },
       function (e) {
         console.log('Error setup delayed event ' + e)
       },
@@ -95,13 +95,12 @@ module.exports = {
   _bannerLoopFunc: null,
 
   // PRIVATE METHODS:
-  _bannerLogic: function (ts) {
-    console.log('[verb] executing banner logic ' + formatDate(ts))
+  _bannerLogic: function (now) {
+    console.log('[verb] executing banner logic ' + formatDate(now))
     // 0) check if we need to loadAds or not
-    var now = new Date()
     //    check if it is too fast to make another attempt
     if ((now - this._bannerStates.lastAttemptTime) < 1000 * this._bannerOptions.cooldownSec) {
-      console.log('attempt cooldown not passed, return now')
+      console.log('attempt cooldown not passed, end the logic')
       return
     }
     //    check if it is too frequent to load an ad
@@ -146,12 +145,26 @@ module.exports = {
     this._bannerStates.lastAttemptNetwork = network.name
     this._bannerStates.lastAttemptTime = now.getTime()
     this._bannerStates.networks[network.name].lastAttemptTime = now.getTime()
+    // TODO: implement java
+    cordova.exec(
+      function (adsEvent) {
+        if (adsEvent) {
+          this._processAdsEvent(adsEvent)
+        }
+      },
+      function (err) {
+
+      }, 'Adgap', 'showBanner', [network.name, network.pid])
     console.log('[info] call java to load banner from network - ' + network.name)
     // HACK: should set lastLoaded in callback from Java
     console.log('[warn] ' + network.name + ' loaded')
     this._bannerStates.lastLoadedTime = now.getTime()
     this._bannerStates.lastLoadedNetwork = network.name
     this._bannerStates.networks[network.name].lastLoadedTime = now.getTime()
+  },
+
+  _processAdsEvent: function (adsEvent) {
+
   },
 
   // PUBLIC METHODS:
@@ -179,6 +192,12 @@ module.exports = {
   stopBanner: function () {
     if (this._bannerLoopFunc) {
       clearInterval(this._bannerLoopFunc)
+      cordova.exec(
+        function () {
+        },
+        function (err) {
+
+        }, 'Adgap', 'stopBanner', [])
       this._bannerLoopFunc = null
     }
   },
