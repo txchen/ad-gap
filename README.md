@@ -6,7 +6,7 @@ ads plugin for cordova, aggregates multiple networks
 First, add the plugin to your cordova project:
 
 ```
-cordova plugin add cordova-plugin-adgap
+cordova plugin add cordova-plugin-adgap --save
 ```
 
 Then, write code to show ads, after cordova is ready, call `configBanner` fisrt:
