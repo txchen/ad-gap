@@ -47,7 +47,7 @@ function formatDate(d) {
 }
 
 module.exports = {
-  ///////////////   misc functions
+  ///////////////   misc APIs
   getSystemInfo: function (successCallback, errorCallback) {
     cordova.exec(successCallback, errorCallback, 'Adgap', 'getSystemInfo', [])
   },
@@ -70,8 +70,9 @@ module.exports = {
       []
     )
   },
-  ///////////////   misc functions
+  ///////////////   misc APIs
 
+  /////////  states
   _bannerOptions: {
     reloadSec: 25, // global reloadSec
     cooldownSec: 10,
@@ -93,6 +94,7 @@ module.exports = {
     },
   },
   _bannerLoopFunc: null,
+  /////////  states
 
   // PRIVATE METHODS:
   _bannerLogic: function (now) {
@@ -145,38 +147,35 @@ module.exports = {
     this._bannerStates.lastAttemptNetwork = network.name
     this._bannerStates.lastAttemptTime = now.getTime()
     this._bannerStates.networks[network.name].lastAttemptTime = now.getTime()
-    // TODO: implement java
+
     cordova.exec(
       function (adsEvent) {
         if (adsEvent) {
-          this._processAdsEvent(adsEvent)
+          // adsEvent contains ads_type, network_name, event_name, event_detail
+          cordova.fireWindowEvent("adgap_event", adsEvent)
         }
       },
       function (err) {
-
+        console.log('failed to show banner', err)
+        cordova.fireWindowEvent("adgap_show_banner_failure",
+          { type: 'show_banner_failure', error: err })
       }, 'Adgap', 'showBanner', [network.name, network.pid])
     console.log('[info] call java to load banner from network - ' + network.name)
     // HACK: should set lastLoaded in callback from Java
-    console.log('[warn] ' + network.name + ' loaded')
+    console.log('[warn] ' + network.name + ' banner loaded')
     this._bannerStates.lastLoadedTime = now.getTime()
     this._bannerStates.lastLoadedNetwork = network.name
     this._bannerStates.networks[network.name].lastLoadedTime = now.getTime()
   },
 
-  _processAdsEvent: function (adsEvent) {
-
-  },
-
-  // PUBLIC METHODS:
-
-  // returns error, if there is something wrong
+  // PUBLIC APIs:
+  // TODO: returns error, if there is something wrong
   configBanner: function (options) {
     // TODO: validate the input, and returns error
     this._bannerOptions = deepmerge(this._bannerOptions, options)
     console.log('The new banner config: ' + JSON.stringify(this._bannerOptions, null, 2))
   },
 
-  // returns error, if there is something wrong
   startBanner: function () {
     if (!this._bannerLoopFunc) {
       this._bannerLoopFunc = setInterval(
@@ -194,9 +193,12 @@ module.exports = {
       clearInterval(this._bannerLoopFunc)
       cordova.exec(
         function () {
+          console.log('banner stopped')
+          cordova.fireWindowEvent("adgap_banner_stopped", { type: 'banner_stopped' })
         },
         function (err) {
-
+          console.log('failed to stop banner', err)
+          cordova.fireWindowEvent("adgap_banner_stop_failure", { type: 'banner_stop_failure', error: err })
         }, 'Adgap', 'stopBanner', [])
       this._bannerLoopFunc = null
     }

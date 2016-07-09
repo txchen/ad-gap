@@ -77,9 +77,17 @@ public class Adgap extends CordovaPlugin {
             String networkName = data.optString(0);
             String pid = data.optString(1);
             loadAndShowBanner(networkName, pid);
+
+            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+            pluginResult.setKeepCallback(true);
+            callbackContext.sendPluginResult(pluginResult);
             return true;
         } else if (action.equals("stopBanner")) {
             hideBanner();
+
+            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+            pluginResult.setKeepCallback(false);
+            callbackContext.sendPluginResult(pluginResult);
             return true;
         } else {
             return false;
@@ -92,6 +100,7 @@ public class Adgap extends CordovaPlugin {
             Log.e(LOG_TAG, "currently only support fban");
             return;
         }
+        loadFBBanner(pid);
     }
 
     private JSONObject buildDummyEvent(int data) {
@@ -187,23 +196,48 @@ public class Adgap extends CordovaPlugin {
         fbAdView.setAdListener(new AdListener() {
             @Override
             public void onError(Ad ad, AdError error) {
-                // TODO: trigger event to cordova
                 Log.w(LOG_TAG, "failed to load fb banner " + error.getErrorCode());
+                PluginResult result = new PluginResult(PluginResult.Status.ERROR,
+                    buildFBBannerEvent("LOAD_ERROR", String.valueOf(error.getErrorCode())));
+                _bannerCallbackContext.sendPluginResult(result);
             }
 
             @Override
             public void onAdLoaded(Ad ad) {
-                // TODO: trigger event to cordova
                 Log.w(LOG_TAG, "fb banner loaded");
                 showAdView(fbAdView);
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildFBBannerEvent("LOAD_OK", ""));
+                _bannerCallbackContext.sendPluginResult(result);
             }
 
             @Override
             public void onAdClicked(Ad ad) {
                 Log.w(LOG_TAG, "fb banner clicked");
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildFBBannerEvent("CLICKED", ""));
+                _bannerCallbackContext.sendPluginResult(result);
             }
         });
         // Request to load an ad
         fbAdView.loadAd();
+    }
+
+    private JSONObject buildFBBannerEvent(String eventName, String eventDetail) {
+        return buildAdsEvent("banner", "fban", eventName, eventDetail);
+    }
+
+    private JSONObject buildAdsEvent(String adsType, String networkName, String eventName, String eventDetail) {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("ads_type", adsType);
+            obj.put("network_name", networkName);
+            obj.put("event_name", eventName);
+            obj.put("event_detail", eventDetail);
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, e.getMessage(), e);
+            return null;
+        }
+        return obj;
     }
 }
