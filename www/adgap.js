@@ -94,20 +94,26 @@ module.exports = {
     },
   },
   _bannerLoopFunc: null,
+  _isInBackground: false,
+  _inited: false,
   /////////  states
 
   // PRIVATE METHODS:
   _bannerLogic: function (now) {
+    if (this._isInBackground) {
+      console.log('[verb] app in background, bypass bannerlogic ' + formatDate(now))
+      return
+    }
     console.log('[verb] executing banner logic ' + formatDate(now))
     // 0) check if we need to loadAds or not
     //    check if it is too fast to make another attempt
     if ((now - this._bannerStates.lastAttemptTime) < 1000 * this._bannerOptions.cooldownSec) {
-      console.log('attempt cooldown not passed, end the logic')
+      console.log('[verb] attempt cooldown not passed, end the logic')
       return
     }
     //    check if it is too frequent to load an ad
     if ((now - this._bannerStates.lastLoadedTime) < 1000 * this._bannerOptions.reloadSec) {
-      console.log('no need to load ads now, since reloadSec has not passed')
+      console.log('[verb] no need to load ads now, since reloadSec has not passed')
       return
     }
     // 1) get all the available networks, and remove un-ready (cooldown) ones
@@ -125,10 +131,10 @@ module.exports = {
       }
     }
     if (!networks.length) {
-      console.log('there are no available networks, return now')
+      console.log('[warn] there are no available networks, return now')
       return
     }
-    console.log(networks.length + ' networks are available to pick up. They are: ' + networkNames)
+    console.log('[info] ' + networks.length + ' networks are available to pick up. They are: ' + networkNames)
     // 2) then random by weight
     var totalWeight = 0
     for (var i in networks) {
@@ -156,7 +162,7 @@ module.exports = {
         }
       },
       function (err) {
-        console.log('failed to show banner', err)
+        console.log('[error] failed to show banner', err)
         cordova.fireWindowEvent("adgap_show_banner_failure",
           { type: 'show_banner_failure', error: err })
       }, 'Adgap', 'showBanner', [network.name, network.pid])
@@ -171,9 +177,22 @@ module.exports = {
   // PUBLIC APIs:
   // TODO: returns error, if there is something wrong
   configBanner: function (options) {
+    if (!this._inited) {
+      console.log('[info] setting up onPause onResume logic')
+      var self = this
+      document.addEventListener('pause', function () {
+          console.log('[info] detected cordova pause event, current isInBackgrond=' + self._isInBackground)
+          self._isInBackground = true
+        }, false)
+      document.addEventListener('resume', function () {
+          console.log('[info] detected cordova resume event, current isInBackgrond=' + self._isInBackground)
+          self._isInBackground = false
+        }, false)
+      this._inited = true
+    }
     // TODO: validate the input, and returns error
     this._bannerOptions = deepmerge(this._bannerOptions, options)
-    console.log('The new banner config: ' + JSON.stringify(this._bannerOptions, null, 2))
+    console.log('[info] The new banner config: ' + JSON.stringify(this._bannerOptions, null, 2))
   },
 
   startBanner: function () {
@@ -193,11 +212,11 @@ module.exports = {
       clearInterval(this._bannerLoopFunc)
       cordova.exec(
         function () {
-          console.log('banner stopped')
+          console.log('[warn] banner stopped')
           cordova.fireWindowEvent("adgap_banner_stopped", { type: 'banner_stopped' })
         },
         function (err) {
-          console.log('failed to stop banner', err)
+          console.log('[error] failed to stop banner', err)
           cordova.fireWindowEvent("adgap_banner_stop_failure", { type: 'banner_stop_failure', error: err })
         }, 'Adgap', 'stopBanner', [])
       this._bannerLoopFunc = null
