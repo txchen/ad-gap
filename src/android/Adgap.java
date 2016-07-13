@@ -222,6 +222,7 @@ public class Adgap extends CordovaPlugin {
                 showAdView(fbAdView);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildFBBannerEvent("LOAD_OK", ""));
+                result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
             }
 
@@ -230,6 +231,7 @@ public class Adgap extends CordovaPlugin {
                 Log.w(LOG_TAG, "fb banner clicked");
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildFBBannerEvent("CLICKED", ""));
+                result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
             }
         });
