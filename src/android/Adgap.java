@@ -17,6 +17,10 @@ import android.widget.RelativeLayout;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
+import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.text.format.Formatter;
 import com.facebook.ads.*;
 
 public class Adgap extends CordovaPlugin {
@@ -37,11 +41,21 @@ public class Adgap extends CordovaPlugin {
                 PackageManager packageManager = myActivity.getPackageManager();
                 String packageName = myActivity.getPackageName();
                 PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
+                // Local IP address V4
+                WifiManager wm = (WifiManager) myActivity.getSystemService("wifi");
+                String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+                // display info
+                DisplayMetrics displayMetrics = myActivity.getBaseContext().getResources().getDisplayMetrics();
 
                 obj.put("imei", telephonyManager.getDeviceId());
                 obj.put("packageName", myActivity.getPackageName());
                 obj.put("versionName", packageInfo.versionName);
                 obj.put("versionCode", packageInfo.versionCode);
+                obj.put("localip", ip);
+                obj.put("screenwidth", displayMetrics.widthPixels);
+                obj.put("screenheight", displayMetrics.heightPixels);
+                obj.put("displaydensity", displayMetrics.density);
+                obj.put("useragent", System.getProperty("http.agent")); // http.agent
 
                 PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
                 callbackContext.sendPluginResult(result);
