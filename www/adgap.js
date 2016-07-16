@@ -204,6 +204,8 @@ module.exports = {
           }
         })(this),
         2000)
+
+      this._bannerLogic(new Date())
     }
   },
 

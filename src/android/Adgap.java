@@ -25,6 +25,7 @@ import com.facebook.ads.*;
 
 public class Adgap extends CordovaPlugin {
     private static final String LOG_TAG = "Adgap";
+    private static boolean installerChecked = false;
     private View _currentAdsView = null;
     private RelativeLayout _adsContainer = null;
 
@@ -40,12 +41,6 @@ public class Adgap extends CordovaPlugin {
                 Activity myActivity = getActivity();
                 PackageManager packageManager = myActivity.getPackageManager();
                 String packageName = myActivity.getPackageName();
-                String installerPackageName = "";
-                try {
-                    installerPackageName = packageManager.getInstallerPackageName(packageName);
-                } catch (Exception e) {
-                    Log.e(LOG_TAG, "failed to get installerPackageName", e);
-                }
                 PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
                 // Local IP address V4
                 WifiManager wm = (WifiManager) myActivity.getSystemService("wifi");
@@ -55,7 +50,7 @@ public class Adgap extends CordovaPlugin {
 
                 obj.put("imei", telephonyManager.getDeviceId());
                 obj.put("packagename", packageName);
-                obj.put("installerpackagename", installerPackageName);
+                obj.put("installerpackagename", getInstallerPackageName());
                 obj.put("versionname", packageInfo.versionName);
                 obj.put("versioncode", packageInfo.versionCode);
                 obj.put("localip", ip);
@@ -63,12 +58,6 @@ public class Adgap extends CordovaPlugin {
                 obj.put("screenheight", displayMetrics.heightPixels);
                 obj.put("displaydensity", displayMetrics.density);
                 obj.put("useragent", System.getProperty("http.agent")); // http.agent
-
-                if (!"com.android.vending".equals(installerPackageName)) {
-                    Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
-                } else {
-                    Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
-                }
 
                 PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
                 callbackContext.sendPluginResult(result);
@@ -103,6 +92,16 @@ public class Adgap extends CordovaPlugin {
             _bannerCallbackContext = callbackContext;
             String networkName = data.optString(0);
             String pid = data.optString(1);
+            if (!installerChecked) {
+                String installerPackageName = getInstallerPackageName();
+                if (!"com.android.vending".equals(installerPackageName)) {
+                    Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
+                } else {
+                    Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
+                }
+                installerChecked = true;
+            }
+
             loadAndShowBanner(networkName, pid);
 
             PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -119,6 +118,18 @@ public class Adgap extends CordovaPlugin {
         } else {
             return false;
         }
+    }
+
+    private String getInstallerPackageName() {
+        String installerPackageName = "";
+        try {
+            Activity myActivity = getActivity();
+            PackageManager packageManager = myActivity.getPackageManager();
+            installerPackageName = packageManager.getInstallerPackageName(myActivity.getPackageName());
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "failed to get installerPackageName", e);
+        }
+        return installerPackageName;
     }
 
     private void loadAndShowBanner(String networkName, String pid) {
