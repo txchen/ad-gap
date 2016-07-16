@@ -40,6 +40,12 @@ public class Adgap extends CordovaPlugin {
                 Activity myActivity = getActivity();
                 PackageManager packageManager = myActivity.getPackageManager();
                 String packageName = myActivity.getPackageName();
+                String installerPackageName = "";
+                try {
+                    installerPackageName = packageManager.getInstallerPackageName(packageName);
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "failed to get installerPackageName", e);
+                }
                 PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
                 // Local IP address V4
                 WifiManager wm = (WifiManager) myActivity.getSystemService("wifi");
@@ -48,14 +54,21 @@ public class Adgap extends CordovaPlugin {
                 DisplayMetrics displayMetrics = myActivity.getBaseContext().getResources().getDisplayMetrics();
 
                 obj.put("imei", telephonyManager.getDeviceId());
-                obj.put("packageName", myActivity.getPackageName());
-                obj.put("versionName", packageInfo.versionName);
-                obj.put("versionCode", packageInfo.versionCode);
+                obj.put("packagename", packageName);
+                obj.put("installerpackagename", installerPackageName);
+                obj.put("versionname", packageInfo.versionName);
+                obj.put("versioncode", packageInfo.versionCode);
                 obj.put("localip", ip);
                 obj.put("screenwidth", displayMetrics.widthPixels);
                 obj.put("screenheight", displayMetrics.heightPixels);
                 obj.put("displaydensity", displayMetrics.density);
                 obj.put("useragent", System.getProperty("http.agent")); // http.agent
+
+                if (!"com.android.vending".equals(installerPackageName)) {
+                    Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
+                } else {
+                    Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
+                }
 
                 PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
                 callbackContext.sendPluginResult(result);
