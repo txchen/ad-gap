@@ -42,6 +42,9 @@ public class Adgap extends CordovaPlugin {
                 PackageManager packageManager = myActivity.getPackageManager();
                 String packageName = myActivity.getPackageName();
                 PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
+                Context context = myActivity.getBaseContext();
+                int appNameResId = context.getApplicationInfo().labelRes;
+                String appName = context.getString(appNameResId);
                 // Local IP address V4
                 WifiManager wm = (WifiManager) myActivity.getSystemService("wifi");
                 String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
@@ -50,6 +53,7 @@ public class Adgap extends CordovaPlugin {
 
                 obj.put("imei", telephonyManager.getDeviceId());
                 obj.put("packagename", packageName);
+                obj.put("appname", appName);
                 obj.put("installerpackagename", getInstallerPackageName());
                 obj.put("versionname", packageInfo.versionName);
                 obj.put("versioncode", packageInfo.versionCode);
