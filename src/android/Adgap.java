@@ -206,6 +206,7 @@ public class Adgap extends CordovaPlugin {
                     RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(wndWidth, bannerHeight);
                     params.topMargin = wndHeight - bannerHeight;
 
+                    Log.i(LOG_TAG, String.format("ww=%d, wh=%d, bh=%d, tm=%d", wndWidth, wndHeight, bannerHeight, wndHeight - bannerHeight));
                     _adsContainer.addView(finalAdView, params);
                     _currentAdsView = finalAdView;
                 } catch (Exception e) {
