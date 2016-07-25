@@ -241,8 +241,9 @@ public class Adgap extends CordovaPlugin {
             @Override
             public void onError(Ad ad, AdError error) {
                 Log.w(LOG_TAG, "failed to load fb banner " + error.getErrorCode());
-                PluginResult result = new PluginResult(PluginResult.Status.ERROR,
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildFBBannerEvent("LOAD_ERROR", String.valueOf(error.getErrorCode())));
+                result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
             }
 
