@@ -11,7 +11,7 @@ cordova plugin add cordova-plugin-adgap --save
 
 Then, write code to show ads, after cordova is ready, call `configBanner` fisrt:
 
-```
+```js
 adgap.configBanner({
   reloadSec: 25,
   networks: {
@@ -22,7 +22,7 @@ adgap.configBanner({
 
 Once configuration is done, call startBanner to show the banner at bottom of your app:
 
-```
+```js
 adgap.startBanner()
 ```
 
@@ -30,7 +30,7 @@ The plugin will auto reload banner every X seconds, so when you create placement
 
 When the banner is loaded, or fail to load, events will be published and you can subscribe them:
 
-```
+```js
 window.addEventListener('adgap_event', function (adsEvent) {
     // HERE, cannot use JSON.stringify on the info, Event is created by cordova, and cannot be serialized.
     // adsEvent contains ads_type, network_name, event_name, event_detail
@@ -39,4 +39,10 @@ window.addEventListener('adgap_event', function (adsEvent) {
     // event_name = LOAD_OK | LOAD_ERROR | CLICKED
     // event_detail = when error happens, error code like '1001'
   }, false);
+```
+
+If you want to pause the banner loop for a while, let it stop loading new ads for some time, you can:
+
+```js
+adgap.snoozeBanner(15000) // will pause the banner loop for 15000 ms
 ```

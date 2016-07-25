@@ -96,6 +96,7 @@ module.exports = {
   _bannerLoopFunc: null,
   _isInBackground: false,
   _inited: false,
+  _snoozeBannerUntil: 0, // timestamp, if current time < _snoozeUntil, then it should snooze
   /////////  states
 
   // PRIVATE METHODS:
@@ -104,6 +105,12 @@ module.exports = {
       console.log('[verb] app in background, bypass bannerlogic ' + formatDate(now))
       return
     }
+    if ((new Date()).getTime() < this._snoozeBannerUntil) {
+      console.log('[info] app is in snooze, bypass bannerlogic ' + formatDate(now))
+      return
+    }
+
+    // Now the actual banner logic
     console.log('[verb] executing banner logic ' + formatDate(now))
     // 0) check if we need to loadAds or not
     //    check if it is too fast to make another attempt
@@ -225,4 +232,8 @@ module.exports = {
     }
   },
 
+  snoozeBanner: function (snoozeMs) {
+    this._snoozeBannerUntil = (new Date()).getTime() + snoozeMs
+    console.log('[warn] banner logic will snooze for ' + snoozeMs + ' ms')
+  },
 }
