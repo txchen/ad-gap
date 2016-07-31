@@ -55,11 +55,11 @@ module.exports = {
 
   /////////  states
   _bannerOptions: {
-    reloadSec: 25, // global reloadSec
+    reloadSec: 26, // global reloadSec
     cooldownSec: 10,
     networks: {
-      fban: { name: 'fban', pid: null, weight: 100, reloadSec: 26 },
-      flurry: { name: 'flurry', pid: null, weight: 100, reloadSec: 20 },
+      fban: { name: 'fban', pid: null, weight: 100, reloadSec: 25 },
+      admob: { name: 'admob', pid: null, weight: 100, reloadSec: 25 },
       mopub: { name: 'mopub', pid: null, weight: 100, reloadSec: 25 },
     },
   },
@@ -70,7 +70,7 @@ module.exports = {
     lastLoadedNetwork: null,
     networks: {
       fban: { lastLoadedTime: 0, lastAttemptTime: 0 },
-      flurry: { lastLoadedTime: 0, lastAttemptTime: 0 },
+      admob: { lastLoadedTime: 0, lastAttemptTime: 0 },
       mopub: { lastLoadedTime: 0, lastAttemptTime: 0 },
     },
   },

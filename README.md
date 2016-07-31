@@ -15,9 +15,10 @@ Then, write code to show ads, after cordova is ready, call `configBanner` fisrt:
 
 ```js
 adgap.configBanner({
-  reloadSec: 25,
+  reloadSec: 26,
   networks: {
-    fban: { name: 'fban', pid: 'YOUR_PLACEMENT_ID', weight: 100, reloadSec: 25 },
+    fban: { name: 'fban', pid: 'YOUR_FBAN_PLACEMENT_ID', weight: 100, reloadSec: 25 },
+    admob: { name: 'admob', pid: 'YOUR_ADMOB_PLACEMENT_ID', weight: 100, reloadSec: 25 },
   }
 })
 ```

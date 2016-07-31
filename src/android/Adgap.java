@@ -22,6 +22,8 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.text.format.Formatter;
 import com.facebook.ads.*;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.MobileAds;
 
 public class Adgap extends CordovaPlugin {
     private static final String LOG_TAG = "Adgap";
@@ -126,6 +128,7 @@ public class Adgap extends CordovaPlugin {
             }
 
             // init ads sdks
+            MobileAds.initialize(activity); // admob
 
             sdkInited = true;
         }
@@ -167,13 +170,21 @@ public class Adgap extends CordovaPlugin {
         return installerPackageName;
     }
 
-    private void loadAndShowBanner(String networkName, String pid) {
-        Log.w(LOG_TAG, String.format("loading banner from %s, pid = %s", networkName, pid));
-        if (!networkName.equals("fban")) {
-            Log.e(LOG_TAG, "currently only support fban");
-            return;
-        }
-        loadFBBanner(pid);
+    private void loadAndShowBanner(final String networkName, final String pid) {
+        final Activity activity = getActivity();
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.w(LOG_TAG, String.format("loading banner from %s, pid = %s", networkName, pid));
+                if ("fban".equals(networkName)) {
+                    loadFBBanner(pid);
+                } else if ("admob".equals(networkName)) {
+                    loadAdmobBanner(pid);
+                } else {
+                    Log.e(LOG_TAG, "currently not supporting " + networkName);
+                }
+            }
+        });
     }
 
     private Activity getActivity() {
@@ -237,8 +248,52 @@ public class Adgap extends CordovaPlugin {
                 Log.i(LOG_TAG, "destroying fb banner");
                 ((com.facebook.ads.AdView) _currentBannerObj).destroy();
             }
+
+            if (_currentBannerObj instanceof com.google.android.gms.ads.AdView) {
+                Log.i(LOG_TAG, "destroying admob banner");
+                ((com.google.android.gms.ads.AdView) _currentBannerObj).destroy();
+            }
             _currentBannerObj = null;
         }
+    }
+
+    private void loadAdmobBanner(String pid) {
+        Log.w(LOG_TAG, "try to load admob banner: " + pid);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        final com.google.android.gms.ads.AdView adView = new com.google.android.gms.ads.AdView(getActivity());
+        adView.setAdSize(com.google.android.gms.ads.AdSize.BANNER);
+        adView.setAdUnitId(pid);
+        adView.setAdListener(new com.google.android.gms.ads.AdListener() {
+            @Override
+            public void onAdLoaded() {
+                Log.w(LOG_TAG, "admob banner loaded");
+                showBannerView(adView, adView);
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("admob", "LOAD_OK", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onAdFailedToLoad(int errorCode) {
+                Log.w(LOG_TAG, "failed to load admob banner " + String.valueOf(errorCode));
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("admob", "LOAD_ERROR", String.valueOf(errorCode)));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onAdLeftApplication() {
+                // left app ~= clicked
+                Log.w(LOG_TAG, "admob banner clicked");
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("admob", "CLICKED", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+        });
+        adView.loadAd(adRequest);
     }
 
     private void loadFBBanner(String pid) {
