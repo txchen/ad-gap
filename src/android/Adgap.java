@@ -34,69 +34,81 @@ public class Adgap extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
         if (action.equals("getSystemInfo")) { // Get imei, packageName, versionName, versionCode
-            try {
-                JSONObject obj = new JSONObject();
-                TelephonyManager telephonyManager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
-                Activity myActivity = getActivity();
-                PackageManager packageManager = myActivity.getPackageManager();
-                String packageName = myActivity.getPackageName();
-                PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
-                Context context = myActivity.getBaseContext();
-                int appNameResId = context.getApplicationInfo().labelRes;
-                String appName = context.getString(appNameResId);
-                // Local IP address V4
-                WifiManager wm = (WifiManager) myActivity.getSystemService("wifi");
-                String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
-                // display info
-                DisplayMetrics displayMetrics = myActivity.getBaseContext().getResources().getDisplayMetrics();
-
-                obj.put("imei", telephonyManager.getDeviceId());
-                obj.put("packagename", packageName);
-                obj.put("appname", appName);
-                obj.put("installerpackagename", getInstallerPackageName());
-                obj.put("versionname", packageInfo.versionName);
-                obj.put("versioncode", packageInfo.versionCode);
-                obj.put("localip", ip);
-                obj.put("screenwidth", displayMetrics.widthPixels);
-                obj.put("screenheight", displayMetrics.heightPixels);
-                obj.put("displaydensity", displayMetrics.density);
-                obj.put("useragent", System.getProperty("http.agent")); // http.agent
-
-                PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
-                callbackContext.sendPluginResult(result);
-                return true;
-            } catch (Exception e) {
-                callbackContext.error(e.toString());
-                return false;
-            }
+            return getSystemInfo(callbackContext);
         } else if (action.equals("showBanner")) {
-            _bannerCallbackContext = callbackContext;
-            String networkName = data.optString(0);
-            String pid = data.optString(1);
-            if (!installerChecked) {
-                String installerPackageName = getInstallerPackageName();
-                if (!"com.android.vending".equals(installerPackageName)) {
-                    Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
-                } else {
-                    Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
-                }
-                installerChecked = true;
-            }
-
-            loadAndShowBanner(networkName, pid);
-
-            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-            pluginResult.setKeepCallback(true);
-            callbackContext.sendPluginResult(pluginResult);
-            return true;
+            return startBanner(callbackContext, data);
         } else if (action.equals("stopBanner")) {
-            hideBanner();
-
-            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-            pluginResult.setKeepCallback(false);
-            callbackContext.sendPluginResult(pluginResult);
-            return true;
+            return stopBanner(callbackContext);
         } else {
+            return false;
+        }
+    }
+
+    private boolean startBanner(CallbackContext callbackContext, JSONArray data) {
+        _bannerCallbackContext = callbackContext;
+        String networkName = data.optString(0);
+        String pid = data.optString(1);
+        if (!installerChecked) {
+            String installerPackageName = getInstallerPackageName();
+            if (!"com.android.vending".equals(installerPackageName)) {
+                Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
+            } else {
+                Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
+            }
+            installerChecked = true;
+        }
+
+        loadAndShowBanner(networkName, pid);
+
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+        pluginResult.setKeepCallback(true);
+        callbackContext.sendPluginResult(pluginResult);
+        return true;
+    }
+
+    private boolean stopBanner(CallbackContext callbackContext) {
+        hideBanner();
+
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
+        pluginResult.setKeepCallback(false);
+        callbackContext.sendPluginResult(pluginResult);
+        return true;
+    }
+
+    private boolean getSystemInfo(CallbackContext callbackContext) {
+        try {
+            JSONObject obj = new JSONObject();
+            TelephonyManager telephonyManager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+            Activity myActivity = getActivity();
+            PackageManager packageManager = myActivity.getPackageManager();
+            String packageName = myActivity.getPackageName();
+            PackageInfo packageInfo = packageManager.getPackageInfo(packageName, 0);
+            Context context = myActivity.getBaseContext();
+            int appNameResId = context.getApplicationInfo().labelRes;
+            String appName = context.getString(appNameResId);
+            // Local IP address V4
+            WifiManager wm = (WifiManager) myActivity.getSystemService("wifi");
+            String ip = Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress());
+            // display info
+            DisplayMetrics displayMetrics = myActivity.getBaseContext().getResources().getDisplayMetrics();
+
+            obj.put("imei", telephonyManager.getDeviceId());
+            obj.put("packagename", packageName);
+            obj.put("appname", appName);
+            obj.put("installerpackagename", getInstallerPackageName());
+            obj.put("versionname", packageInfo.versionName);
+            obj.put("versioncode", packageInfo.versionCode);
+            obj.put("localip", ip);
+            obj.put("screenwidth", displayMetrics.widthPixels);
+            obj.put("screenheight", displayMetrics.heightPixels);
+            obj.put("displaydensity", displayMetrics.density);
+            obj.put("useragent", System.getProperty("http.agent")); // http.agent
+
+            PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
+            callbackContext.sendPluginResult(result);
+            return true;
+        } catch (Exception e) {
+            callbackContext.error(e.toString());
             return false;
         }
     }
