@@ -6,6 +6,7 @@ Now adgap supports the following networks:
 * Facebook Audience Network
 * Mopub
 * Admob
+* mMedia
 
 ## Usage
 
@@ -26,6 +27,7 @@ adgap.configBanner({
     fban: { name: 'fban', pid: 'YOUR_FBAN_PLACEMENT_ID', weight: 100, reloadSec: 25 },
     admob: { name: 'admob', pid: 'YOUR_ADMOB_PLACEMENT_ID', weight: 100, reloadSec: 25 },
     mopub: { name: 'mopub', pid: 'YOUR_MOPUD_PLACEMENT_ID', weight: 100, reloadSec: 25 },
+    mm: { name: 'mm', pid: 'YOUR_MMEDIA_PLACEMENT_ID', weight: 100, reloadSec: 25 },
   }
 })
 ```

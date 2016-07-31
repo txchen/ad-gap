@@ -34,6 +34,10 @@ import com.google.android.gms.ads.MobileAds;
 import com.mopub.mobileads.MoPubErrorCode;
 import com.mopub.mobileads.MoPubView;
 
+import com.millennialmedia.InlineAd;
+import com.millennialmedia.MMException;
+import com.millennialmedia.MMSDK;
+
 public class Adgap extends CordovaPlugin {
     private static final String LOG_TAG = "Adgap";
 
@@ -138,6 +142,7 @@ public class Adgap extends CordovaPlugin {
 
             // init ads sdks
             MobileAds.initialize(activity); // admob
+            MMSDK.initialize(activity); // mm
 
             sdkInited = true;
         }
@@ -191,6 +196,8 @@ public class Adgap extends CordovaPlugin {
                     loadAdmobBanner(pid);
                 } else if ("mopub".equals(networkName)) {
                     loadMopubBanner(pid);
+                } else if ("mm".equals(networkName)) {
+                    loadMMBanner(pid);
                 } else {
                     Log.e(LOG_TAG, "currently not supporting " + networkName);
                 }
@@ -269,8 +276,67 @@ public class Adgap extends CordovaPlugin {
                 Log.i(LOG_TAG, "destroying mopub banner");
                 ((MoPubView) _currentBannerObj).destroy();
             }
+
+            if (_currentBannerObj instanceof InlineAd) {
+                Log.i(LOG_TAG, "destroying mm banner");
+                // actually nothing to do
+            }
             _currentBannerObj = null;
         }
+    }
+
+    private void loadMMBanner(String pid) {
+        final InlineAd.InlineAdMetadata inlineAdMetadata = new InlineAd.InlineAdMetadata().
+                setAdSize(InlineAd.AdSize.BANNER);
+        final ViewGroup mmBannerView = new RelativeLayout(getActivity());
+        InlineAd inlineAd;
+        try {
+            inlineAd = InlineAd.createInstance(pid, mmBannerView);
+        } catch (MMException e) {
+            e.printStackTrace();
+            return;
+        }
+        inlineAd.setListener(new InlineAd.InlineListener() {
+            @Override
+            public void onRequestSucceeded(InlineAd inlineAd) {
+                Log.w(LOG_TAG, "mm banner loaded");
+                showBannerView(mmBannerView, inlineAd);
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("mm", "LOAD_OK", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onRequestFailed(InlineAd inlineAd, InlineAd.InlineErrorStatus errorStatus) {
+                Log.w(LOG_TAG, "failed to load mm banner " + String.valueOf(errorStatus.getErrorCode()));
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("mm", "LOAD_ERROR", String.valueOf(errorStatus.getErrorCode())));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onClicked(InlineAd inlineAd) {
+                Log.w(LOG_TAG, "mm banner clicked");
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("mm", "CLICKED", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onResize(InlineAd inlineAd, int i, int i1) { }
+            @Override
+            public void onResized(InlineAd inlineAd, int i, int i1, boolean b) { }
+            @Override
+            public void onExpanded(InlineAd inlineAd) { }
+            @Override
+            public void onCollapsed(InlineAd inlineAd) { }
+            @Override
+            public void onAdLeftApplication(InlineAd inlineAd) { }
+        });
+        inlineAd.request(inlineAdMetadata);
     }
 
     private void loadMopubBanner(String pid) {
@@ -308,7 +374,6 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onBannerExpanded(MoPubView banner) { }
-
             @Override
             public void onBannerCollapsed(MoPubView banner) { }
         });

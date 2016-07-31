@@ -61,6 +61,7 @@ module.exports = {
       fban: { name: 'fban', pid: null, weight: 100, reloadSec: 25 },
       admob: { name: 'admob', pid: null, weight: 100, reloadSec: 25 },
       mopub: { name: 'mopub', pid: null, weight: 100, reloadSec: 25 },
+      mm: { name: 'mm', pid: null, weight: 100, reloadSec: 25 },
     },
   },
   _bannerStates: {
@@ -72,6 +73,7 @@ module.exports = {
       fban: { lastLoadedTime: 0, lastAttemptTime: 0 },
       admob: { lastLoadedTime: 0, lastAttemptTime: 0 },
       mopub: { lastLoadedTime: 0, lastAttemptTime: 0 },
+      mm: { lastLoadedTime: 0, lastAttemptTime: 0 },
     },
   },
   _bannerLoopFunc: null,
