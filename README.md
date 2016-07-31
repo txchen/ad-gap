@@ -16,6 +16,15 @@ First, add the plugin to your cordova project:
 cordova plugin add cordova-plugin-adgap --save
 ```
 
+Since mMedia requires minSDKVer to be GE 16, if you get build error, then add the following to your config.xml
+
+```
+<platform name="android">
+    <preference name="android-minSdkVersion" value="16" />   <------ add this
+    <allow-intent href="market:*" />
+</platform>
+```
+
 ### Show banner ads
 
 Then, write code to show ads, after cordova is ready, call `configBanner` fisrt:
@@ -28,6 +37,7 @@ adgap.configBanner({
     admob: { name: 'admob', pid: 'YOUR_ADMOB_PLACEMENT_ID', weight: 100, reloadSec: 25 },
     mopub: { name: 'mopub', pid: 'YOUR_MOPUD_PLACEMENT_ID', weight: 100, reloadSec: 25 },
     mm: { name: 'mm', pid: 'YOUR_MMEDIA_PLACEMENT_ID', weight: 100, reloadSec: 25 },
+    inmobi: { name: 'inmobi', pid: 'YOUR_INMOBI_PLACEMENT_ID', acctid: 'YOUR_INMOBI_ACCOUNT_ID', weight: 100, reloadSec: 25 },
   }
 })
 ```

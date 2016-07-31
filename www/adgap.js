@@ -62,6 +62,7 @@ module.exports = {
       admob: { name: 'admob', pid: null, weight: 100, reloadSec: 25 },
       mopub: { name: 'mopub', pid: null, weight: 100, reloadSec: 25 },
       mm: { name: 'mm', pid: null, weight: 100, reloadSec: 25 },
+      inmobi: { name: 'inmobi', pid: null, acctid: null, weight: 100, reloadSec: 25 },
     },
   },
   _bannerStates: {
@@ -74,6 +75,7 @@ module.exports = {
       admob: { lastLoadedTime: 0, lastAttemptTime: 0 },
       mopub: { lastLoadedTime: 0, lastAttemptTime: 0 },
       mm: { lastLoadedTime: 0, lastAttemptTime: 0 },
+      inmobi: { lastLoadedTime: 0, lastAttemptTime: 0 },
     },
   },
   _bannerLoopFunc: null,
@@ -183,6 +185,22 @@ module.exports = {
     }
     // TODO: validate the input, and returns error
     this._bannerOptions = deepmerge(this._bannerOptions, options)
+    for (var property in this._bannerOptions.networks) {
+      if (this._bannerOptions.networks[property].pid === null) {
+        delete this._bannerOptions.networks[property]
+      }
+    }
+    if (this._bannerOptions.networks.inmobi && this._bannerOptions.networks.inmobi.acctid === null) {
+      console.log('[error] inmobi must have an account id, so current config is invalid, remove inmobi now.')
+      delete this._bannerOptions.networks.inmobi
+    }
+    if (this._bannerOptions.networks.inmobi) {
+      cordova.exec(
+        function () { },
+        function (err) {
+          console.log('[error] failed to call setInmobiAccountId', err)
+        }, 'Adgap', 'setInmobiAccountId', [ this._bannerOptions.networks.inmobi.acctid ])
+    }
     console.log('[info] The new banner config: ' + JSON.stringify(this._bannerOptions, null, 2))
   },
 

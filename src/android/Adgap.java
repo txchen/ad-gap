@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Map;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,10 @@ import com.millennialmedia.InlineAd;
 import com.millennialmedia.MMException;
 import com.millennialmedia.MMSDK;
 
+import com.inmobi.ads.InMobiAdRequestStatus;
+import com.inmobi.ads.InMobiBanner;
+import com.inmobi.sdk.InMobiSdk;
+
 public class Adgap extends CordovaPlugin {
     private static final String LOG_TAG = "Adgap";
 
@@ -45,6 +50,8 @@ public class Adgap extends CordovaPlugin {
     private RelativeLayout _bannerContainer = null;
     private CallbackContext _bannerCallbackContext;
     private static boolean sdkInited = false;
+
+    private static String inmobiAccountId = "";
 
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
@@ -54,6 +61,9 @@ public class Adgap extends CordovaPlugin {
             return startBanner(callbackContext, data);
         } else if (action.equals("stopBanner")) {
             return stopBanner(callbackContext);
+        } else if (action.equals("setInmobiAccountId")) {
+            inmobiAccountId = data.optString(0);
+            return true;
         } else {
             return false;
         }
@@ -144,6 +154,10 @@ public class Adgap extends CordovaPlugin {
             MobileAds.initialize(activity); // admob
             MMSDK.initialize(activity); // mm
 
+            // Inmobi
+            InMobiSdk.setLogLevel(InMobiSdk.LogLevel.ERROR);
+            InMobiSdk.init(getActivity(), inmobiAccountId);
+
             sdkInited = true;
         }
     }
@@ -198,6 +212,8 @@ public class Adgap extends CordovaPlugin {
                     loadMopubBanner(pid);
                 } else if ("mm".equals(networkName)) {
                     loadMMBanner(pid);
+                } else if ("inmobi".equals(networkName)) {
+                    loadInmobiBanner(pid);
                 } else {
                     Log.e(LOG_TAG, "currently not supporting " + networkName);
                 }
@@ -281,11 +297,76 @@ public class Adgap extends CordovaPlugin {
                 Log.i(LOG_TAG, "destroying mm banner");
                 // actually nothing to do
             }
+
+            if (_currentBannerObj instanceof InMobiBanner) {
+                Log.i(LOG_TAG, "destroying inmobi banner");
+                // actually nothing to do
+            }
             _currentBannerObj = null;
         }
     }
 
+    private void loadInmobiBanner(String pid) {
+        Log.w(LOG_TAG, "try to load inmobi banner: " + pid);
+        Long pidLong = Long.parseLong(pid);
+        final InMobiBanner imBanner = new InMobiBanner(getActivity(), pidLong);
+        int width = toPixelUnits(320);
+        int height = toPixelUnits(50);
+        RelativeLayout.LayoutParams bannerLayoutParams =
+                new RelativeLayout.LayoutParams(width, height);
+        bannerLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        bannerLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+
+        imBanner.setLayoutParams(bannerLayoutParams);
+        imBanner.setListener(new InMobiBanner.BannerAdListener() {
+            @Override
+            public void onAdLoadSucceeded(InMobiBanner inMobiBanner) {
+                Log.w(LOG_TAG, "inmobi banner loaded");
+                showBannerView(imBanner, imBanner);
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("inmobi", "LOAD_OK", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onAdLoadFailed(InMobiBanner inMobiBanner, InMobiAdRequestStatus inMobiAdRequestStatus) {
+                Log.w(LOG_TAG, "failed to load inmobi banner " + String.valueOf(inMobiAdRequestStatus.getStatusCode()));
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("inmobi", "LOAD_ERROR", String.valueOf(inMobiAdRequestStatus.getStatusCode())));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onAdDisplayed(InMobiBanner inMobiBanner) { }
+
+            @Override
+            public void onAdDismissed(InMobiBanner inMobiBanner) { }
+
+            @Override
+            public void onAdInteraction(InMobiBanner inMobiBanner, Map<Object, Object> map) { }
+
+            @Override
+            public void onUserLeftApplication(InMobiBanner inMobiBanner) {
+                // left app ~= clicked
+                Log.w(LOG_TAG, "inmobi banner clicked");
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("inmobi", "CLICKED", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onAdRewardActionCompleted(InMobiBanner inMobiBanner, Map<Object, Object> map) { }
+        });
+        // NOTE: if banner not added to container, inmobi banner cannot load, so here must add.
+        _bannerContainer.addView(imBanner);
+        imBanner.load();
+    }
+
     private void loadMMBanner(String pid) {
+        Log.w(LOG_TAG, "try to load mm banner: " + pid);
         final InlineAd.InlineAdMetadata inlineAdMetadata = new InlineAd.InlineAdMetadata().
                 setAdSize(InlineAd.AdSize.BANNER);
         final ViewGroup mmBannerView = new RelativeLayout(getActivity());
@@ -340,6 +421,7 @@ public class Adgap extends CordovaPlugin {
     }
 
     private void loadMopubBanner(String pid) {
+        Log.w(LOG_TAG, "try to load mopub banner: " + pid);
         final MoPubView mopubView = new MoPubView(getActivity());
         mopubView.setAdUnitId(pid);
         mopubView.setBannerAdListener(new MoPubView.BannerAdListener() {
@@ -468,5 +550,10 @@ public class Adgap extends CordovaPlugin {
             return null;
         }
         return obj;
+    }
+
+    private int toPixelUnits(int dipUnit) {
+        float density = getActivity().getBaseContext().getResources().getDisplayMetrics().density;
+        return Math.round(dipUnit * density);
     }
 }

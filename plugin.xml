@@ -6,7 +6,7 @@
     xmlns:m3="http://schemas.microsoft.com/appx/2014/manifest"
     xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
     id="cordova-plugin-adgap"
-    version="1.1.3">
+    version="1.1.4">
 
     <name>Adgap</name>
     <description>Adgap plugin</description>
@@ -45,6 +45,12 @@
               android:configChanges="keyboardHidden|orientation|screenSize"/>
           <activity android:name="com.mopub.mobileads.MraidVideoPlayerActivity"
               android:configChanges="keyboardHidden|orientation|screenSize"/>
+
+          <!--Inmobi - Required Activity for rendering ads in the embedded browser-->
+          <activity android:name="com.inmobi.rendering.InMobiAdActivity"
+              android:configChanges="keyboardHidden|orientation|keyboard|smallestScreenSize|screenSize"
+              android:theme="@android:style/Theme.Translucent.NoTitleBar"
+              android:hardwareAccelerated="true" />
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/*">
@@ -60,6 +66,7 @@
         <source-file src="src/android/Intenthelper.java" target-dir="src/com/adgap/"/>
         <source-file src="src/android/AudienceNetwork.aar" target-dir="libs" framework="true" />
         <source-file src="src/android/mm-ad-sdk.aar" target-dir="libs" framework="true" />
+        <source-file src="src/android/InMobi-5.3.1.jar" target-dir="libs" framework="true" />
         <source-file src="build-extras.gradle" target-dir="."/>
     </platform>
 
