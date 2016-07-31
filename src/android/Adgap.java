@@ -503,7 +503,6 @@ public class Adgap extends CordovaPlugin {
 
     private void loadFBBanner(String pid) {
         Log.w(LOG_TAG, "try to load fb banner: " + pid);
-        // now only load FB ads
         final AdView fbAdView = new AdView(getActivity(), pid, AdSize.BANNER_320_50);
         fbAdView.setAdListener(new AdListener() {
             @Override
