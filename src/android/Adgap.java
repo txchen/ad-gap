@@ -21,9 +21,18 @@ import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.text.format.Formatter;
-import com.facebook.ads.*;
+
+import com.facebook.ads.Ad;
+import com.facebook.ads.AdError;
+import com.facebook.ads.AdListener;
+import com.facebook.ads.AdSize;
+import com.facebook.ads.AdView;
+
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.MobileAds;
+
+import com.mopub.mobileads.MoPubErrorCode;
+import com.mopub.mobileads.MoPubView;
 
 public class Adgap extends CordovaPlugin {
     private static final String LOG_TAG = "Adgap";
@@ -180,6 +189,8 @@ public class Adgap extends CordovaPlugin {
                     loadFBBanner(pid);
                 } else if ("admob".equals(networkName)) {
                     loadAdmobBanner(pid);
+                } else if ("mopub".equals(networkName)) {
+                    loadMopubBanner(pid);
                 } else {
                     Log.e(LOG_TAG, "currently not supporting " + networkName);
                 }
@@ -253,8 +264,55 @@ public class Adgap extends CordovaPlugin {
                 Log.i(LOG_TAG, "destroying admob banner");
                 ((com.google.android.gms.ads.AdView) _currentBannerObj).destroy();
             }
+
+            if (_currentBannerObj instanceof MoPubView) {
+                Log.i(LOG_TAG, "destroying mopub banner");
+                ((MoPubView) _currentBannerObj).destroy();
+            }
             _currentBannerObj = null;
         }
+    }
+
+    private void loadMopubBanner(String pid) {
+        final MoPubView mopubView = new MoPubView(getActivity());
+        mopubView.setAdUnitId(pid);
+        mopubView.setBannerAdListener(new MoPubView.BannerAdListener() {
+            @Override
+            public void onBannerLoaded(MoPubView banner) {
+                Log.w(LOG_TAG, "mopub banner loaded");
+                showBannerView(mopubView, mopubView);
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("mopub", "LOAD_OK", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onBannerFailed(MoPubView banner, MoPubErrorCode errorCode) {
+                Log.w(LOG_TAG, "failed to load mopub banner " + errorCode.toString());
+                mopubView.destroy();
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("mopub", "LOAD_ERROR", String.valueOf(errorCode)));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onBannerClicked(MoPubView banner) {
+                Log.w(LOG_TAG, "mopub banner clicked");
+                PluginResult result = new PluginResult(PluginResult.Status.OK,
+                    buildAdsEvent("mopub", "CLICKED", ""));
+                result.setKeepCallback(true);
+                _bannerCallbackContext.sendPluginResult(result);
+            }
+
+            @Override
+            public void onBannerExpanded(MoPubView banner) { }
+
+            @Override
+            public void onBannerCollapsed(MoPubView banner) { }
+        });
+        mopubView.loadAd();
     }
 
     private void loadAdmobBanner(String pid) {

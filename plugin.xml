@@ -6,7 +6,7 @@
     xmlns:m3="http://schemas.microsoft.com/appx/2014/manifest"
     xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
     id="cordova-plugin-adgap"
-    version="1.1.1">
+    version="1.1.2">
 
     <name>Adgap</name>
     <description>Adgap plugin</description>
@@ -33,6 +33,18 @@
             <feature name="Intenthelper">
                 <param name="android-package" value="com.adgap.Intenthelper"/>
             </feature>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+          <!-- mopub -->
+          <activity android:name="com.mopub.mobileads.MoPubActivity"
+              android:configChanges="keyboardHidden|orientation|screenSize"/>
+          <activity android:name="com.mopub.mobileads.MraidActivity"
+              android:configChanges="keyboardHidden|orientation|screenSize"/>
+          <activity android:name="com.mopub.common.MoPubBrowser"
+              android:configChanges="keyboardHidden|orientation|screenSize"/>
+          <activity android:name="com.mopub.mobileads.MraidVideoPlayerActivity"
+              android:configChanges="keyboardHidden|orientation|screenSize"/>
         </config-file>
 
         <config-file target="AndroidManifest.xml" parent="/*">

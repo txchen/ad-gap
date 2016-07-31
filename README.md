@@ -1,5 +1,11 @@
 # adgap
-ads plugin for cordova, aggregates multiple networks
+ads plugin for cordova, aggregates multiple networks. Only supports banner ad format.
+
+Now adgap supports the following networks:
+
+* Facebook Audience Network
+* Mopub
+* Admob
 
 ## Usage
 
@@ -19,6 +25,7 @@ adgap.configBanner({
   networks: {
     fban: { name: 'fban', pid: 'YOUR_FBAN_PLACEMENT_ID', weight: 100, reloadSec: 25 },
     admob: { name: 'admob', pid: 'YOUR_ADMOB_PLACEMENT_ID', weight: 100, reloadSec: 25 },
+    mopub: { name: 'mopub', pid: 'YOUR_MOPUD_PLACEMENT_ID', weight: 100, reloadSec: 25 },
   }
 })
 ```

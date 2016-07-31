@@ -2,6 +2,7 @@ repositories {
   flatDir {
     dirs 'libs'
   }
+  jcenter()
 }
 
 dependencies {
@@ -9,4 +10,8 @@ dependencies {
   compile 'com.google.android.gms:play-services-ads:8.4.0'
 
   compile(name: 'AudienceNetwork', ext: 'aar')
+
+  compile('com.mopub:mopub-sdk:4.7.0@aar') {
+      transitive = true
+  }
 }
