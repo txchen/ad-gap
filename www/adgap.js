@@ -56,7 +56,7 @@ module.exports = {
   /////////  states
   _bannerOptions: {
     reloadSec: 26, // global reloadSec
-    cooldownSec: 10,
+    cooldownSec: 8,
     networks: {
       fban: { name: 'fban', pid: null, weight: 100, reloadSec: 25 },
       admob: { name: 'admob', pid: null, weight: 100, reloadSec: 25 },
@@ -92,7 +92,6 @@ module.exports = {
     }
 
     // Now the actual banner logic
-    console.log('[verb] executing banner logic ' + formatDate(now))
     // 0) check if we need to loadAds or not
     //    check if it is too fast to make another attempt
     if ((now - this._bannerStates.lastAttemptTime) < 1000 * this._bannerOptions.cooldownSec) {
@@ -142,11 +141,18 @@ module.exports = {
     this._bannerStates.lastAttemptTime = now.getTime()
     this._bannerStates.networks[network.name].lastAttemptTime = now.getTime()
 
+    var self = this
     cordova.exec(
       function (adsEvent) {
         if (adsEvent) {
           // adsEvent contains ads_type, network_name, event_name, event_detail
-          cordova.fireWindowEvent("adgap_event", adsEvent)
+          cordova.fireWindowEvent('adgap_event', adsEvent)
+          if (adsEvent.event_name === 'LOAD_OK') {
+            console.log('[warn] ' + network.name + ' banner loaded')
+            self._bannerStates.lastLoadedTime = now.getTime()
+            self._bannerStates.lastLoadedNetwork = network.name
+            self._bannerStates.networks[network.name].lastLoadedTime = now.getTime()
+          }
         }
       },
       function (err) {
@@ -155,11 +161,6 @@ module.exports = {
           { type: 'show_banner_failure', error: err })
       }, 'Adgap', 'showBanner', [network.name, network.pid])
     console.log('[info] call java to load banner from network - ' + network.name)
-    // HACK: should set lastLoaded in callback from Java
-    console.log('[warn] ' + network.name + ' banner loaded')
-    this._bannerStates.lastLoadedTime = now.getTime()
-    this._bannerStates.lastLoadedNetwork = network.name
-    this._bannerStates.networks[network.name].lastLoadedTime = now.getTime()
   },
 
   // PUBLIC APIs:
