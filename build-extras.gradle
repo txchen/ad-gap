@@ -5,5 +5,8 @@ repositories {
 }
 
 dependencies {
+  compile 'com.google.android.gms:play-services-base:8.4.0'
+  compile 'com.google.android.gms:play-services-ads:8.4.0'
+
   compile(name: 'AudienceNetwork', ext: 'aar')
 }

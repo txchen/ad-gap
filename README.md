@@ -9,6 +9,8 @@ First, add the plugin to your cordova project:
 cordova plugin add cordova-plugin-adgap --save
 ```
 
+### Show banner ads
+
 Then, write code to show ads, after cordova is ready, call `configBanner` fisrt:
 
 ```js
@@ -45,4 +47,32 @@ If you want to pause the banner loop for a while, let it stop loading new ads fo
 
 ```js
 adgap.snoozeBanner(15000) // will pause the banner loop for 15000 ms
+```
+
+### Send broadcast
+
+```js
+intenthelper.sendBroadcast('com.xzy.abc.ACTION_NAME',
+  { extraName1: 'extraValue1', extraName2: 'extraValue2' })
+```
+
+### Get ads info
+
+```js
+intenthelper.getAdsInfo(
+  function (info) {
+    // now get info.adsid and info.adslimittracking
+  },
+  function (error) {
+
+  }
+)
+```
+
+### Check if a package is installed or not:
+
+```js
+intenthelper.checkPackage('com.awesome.pkg', function (installed) {
+  // installed is boolean
+})
 ```

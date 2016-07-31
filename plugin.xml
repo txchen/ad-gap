@@ -6,7 +6,7 @@
     xmlns:m3="http://schemas.microsoft.com/appx/2014/manifest"
     xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
     id="cordova-plugin-adgap"
-    version="1.0.9">
+    version="1.1.0">
 
     <name>Adgap</name>
     <description>Adgap plugin</description>
@@ -19,12 +19,19 @@
         <clobbers target="adgap" />
     </js-module>
 
+    <js-module src="www/intenthelper.js" name="intenthelper">
+        <clobbers target="intenthelper" />
+    </js-module>
+
     <!-- android -->
     <platform name="android">
 
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="Adgap">
                 <param name="android-package" value="com.adgap.Adgap"/>
+            </feature>
+            <feature name="Intenthelper">
+                <param name="android-package" value="com.adgap.Intenthelper"/>
             </feature>
         </config-file>
 
@@ -38,8 +45,8 @@
         </config-file>
 
         <source-file src="src/android/Adgap.java" target-dir="src/com/adgap/"/>
+        <source-file src="src/android/Intenthelper.java" target-dir="src/com/adgap/"/>
         <source-file src="src/android/AudienceNetwork.aar" target-dir="libs" framework="true" />
-        <source-file src="src/android/DebugSettings.aar" target-dir="libs" framework="true" />
         <source-file src="build-extras.gradle" target-dir="."/>
     </platform>
 
