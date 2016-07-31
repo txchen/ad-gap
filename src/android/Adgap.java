@@ -25,11 +25,11 @@ import com.facebook.ads.*;
 
 public class Adgap extends CordovaPlugin {
     private static final String LOG_TAG = "Adgap";
-    private static boolean installerChecked = false;
-    private View _currentAdsView = null;
-    private RelativeLayout _adsContainer = null;
 
+    private Object _currentBannerObj = null;
+    private RelativeLayout _bannerContainer = null;
     private CallbackContext _bannerCallbackContext;
+    private static boolean sdkInited = false;
 
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
@@ -44,19 +44,12 @@ public class Adgap extends CordovaPlugin {
         }
     }
 
+    // start of top level methods
     private boolean startBanner(CallbackContext callbackContext, JSONArray data) {
+        init();
         _bannerCallbackContext = callbackContext;
         String networkName = data.optString(0);
         String pid = data.optString(1);
-        if (!installerChecked) {
-            String installerPackageName = getInstallerPackageName();
-            if (!"com.android.vending".equals(installerPackageName)) {
-                Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
-            } else {
-                Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
-            }
-            installerChecked = true;
-        }
 
         loadAndShowBanner(networkName, pid);
 
@@ -67,6 +60,7 @@ public class Adgap extends CordovaPlugin {
     }
 
     private boolean stopBanner(CallbackContext callbackContext) {
+        init();
         hideBanner();
 
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -112,6 +106,54 @@ public class Adgap extends CordovaPlugin {
             return false;
         }
     }
+    // end of top level methods
+
+    private void init() {
+        if (!sdkInited) {
+            final Activity activity = getActivity();
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    createBannerContainer();
+                }
+            });
+
+            String installerPackageName = getInstallerPackageName();
+            if (!"com.android.vending".equals(installerPackageName)) {
+                Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
+            } else {
+                Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
+            }
+
+            // init ads sdks
+
+            sdkInited = true;
+        }
+    }
+
+    private void createBannerContainer() {
+        if (_bannerContainer != null) {
+            return;
+        }
+        Activity activity = getActivity();
+        Log.w(LOG_TAG, "AdsContainer is null, creating that");
+        RelativeLayout bigLayout = new RelativeLayout(activity);
+        // rootView is Framelayout, add a big one to fill the parent
+        getRootView().addView(bigLayout, new RelativeLayout.LayoutParams(-1, -1));
+        bigLayout.bringToFront();
+
+        RelativeLayout rl = new RelativeLayout(activity);
+        DisplayMetrics displayMetrics = activity.getBaseContext().getResources().getDisplayMetrics();
+        int containerHeight = Math.round(50 * displayMetrics.density);
+
+        Log.i(LOG_TAG, String.format("containerHeight=%d", containerHeight));
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, containerHeight);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+
+        bigLayout.addView(rl, params);
+        rl.bringToFront();
+        _bannerContainer = rl;
+    }
 
     private String getInstallerPackageName() {
         String installerPackageName = "";
@@ -134,16 +176,6 @@ public class Adgap extends CordovaPlugin {
         loadFBBanner(pid);
     }
 
-    private JSONObject buildDummyEvent(int data) {
-        JSONObject obj = new JSONObject();
-        try {
-            obj.put("val", data);
-        } catch (JSONException e) {
-            Log.e(LOG_TAG, e.getMessage(), e);
-        }
-        return obj;
-    }
-
     private Activity getActivity() {
         return cordova.getActivity();
     }
@@ -156,17 +188,6 @@ public class Adgap extends CordovaPlugin {
         return (ViewGroup) getActivity().getWindow().getDecorView().findViewById(android.R.id.content);
     }
 
-    private void createAdsContainer(Activity activity) {
-        if (_adsContainer != null) {
-            return;
-        }
-        Log.w(LOG_TAG, "AdsContainer is null, creating that");
-        RelativeLayout rl = new RelativeLayout(activity);
-        getRootView().addView(rl, new RelativeLayout.LayoutParams(-1, -1));
-        rl.bringToFront();
-        _adsContainer = rl;
-    }
-
     private void destroyAdView(View adView) {
         if (adView != null) {
             if (adView instanceof com.facebook.ads.AdView) {
@@ -175,32 +196,21 @@ public class Adgap extends CordovaPlugin {
         }
     }
 
-    private void showAdView(final View adView) {
-        final View finalAdView = adView;
+    private void showBannerView(final View adView, final Object bannerObject) {
         final Activity activity = getActivity();
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                hideBanner(); // clear the current banner first
                 try {
-                    createAdsContainer(activity);
-                    _adsContainer.removeAllViews();
-                    destroyAdView(_currentAdsView);
-                    // Now add adView into the container
-                    int wndWidth = getMainView().getWidth();
-                    int wndHeight = getMainView().getHeight();
-
-                    DisplayMetrics displayMetrics = activity.getBaseContext().getResources().getDisplayMetrics();
-                    int bannerHeight = Math.round(50 * displayMetrics.density);
-
-                    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(wndWidth, bannerHeight);
-                    //params.topMargin = wndHeight - bannerHeight;
-                    params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, finalAdView.getId());
-
-                    Log.i(LOG_TAG, String.format("ww=%d, wh=%d, bh=%d", wndWidth, wndHeight, bannerHeight));
-                    _adsContainer.addView(finalAdView, params);
-                    _currentAdsView = finalAdView;
+                    if (adView != null) {
+                        _bannerContainer.addView(adView, new RelativeLayout.LayoutParams(-1, -1));
+                    }
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "!!!! Failed to showAd", e);
+                }
+                if (bannerObject != null) {
+                    _currentBannerObj = bannerObject;
                 }
             }
         });
@@ -212,14 +222,23 @@ public class Adgap extends CordovaPlugin {
             @Override
             public void run() {
                 try {
-                    createAdsContainer(activity);
-                    _adsContainer.removeAllViews();
-                    destroyAdView(_currentAdsView);
+                    _bannerContainer.removeAllViews();
+                    destroyBannerObject();
                 } catch (Exception e) {
-                    Log.e(LOG_TAG, "!!!! Failed to hideAd", e);
+                    Log.e(LOG_TAG, "!!!! Failed to hideBanner", e);
                 }
             }
         });
+    }
+
+    private void destroyBannerObject() {
+        if (_currentBannerObj != null) {
+            if (_currentBannerObj instanceof com.facebook.ads.AdView) {
+                Log.i(LOG_TAG, "destroying fb banner");
+                ((com.facebook.ads.AdView) _currentBannerObj).destroy();
+            }
+            _currentBannerObj = null;
+        }
     }
 
     private void loadFBBanner(String pid) {
@@ -231,7 +250,7 @@ public class Adgap extends CordovaPlugin {
             public void onError(Ad ad, AdError error) {
                 Log.w(LOG_TAG, "failed to load fb banner " + error.getErrorCode());
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
-                    buildFBBannerEvent("LOAD_ERROR", String.valueOf(error.getErrorCode())));
+                    buildAdsEvent("fban", "LOAD_ERROR", String.valueOf(error.getErrorCode())));
                 result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
             }
@@ -239,9 +258,9 @@ public class Adgap extends CordovaPlugin {
             @Override
             public void onAdLoaded(Ad ad) {
                 Log.w(LOG_TAG, "fb banner loaded");
-                showAdView(fbAdView);
+                showBannerView(fbAdView, fbAdView);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
-                    buildFBBannerEvent("LOAD_OK", ""));
+                    buildAdsEvent("fban", "LOAD_OK", ""));
                 result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
             }
@@ -250,7 +269,7 @@ public class Adgap extends CordovaPlugin {
             public void onAdClicked(Ad ad) {
                 Log.w(LOG_TAG, "fb banner clicked");
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
-                    buildFBBannerEvent("CLICKED", ""));
+                    buildAdsEvent("fban", "CLICKED", ""));
                 result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
             }
@@ -259,14 +278,10 @@ public class Adgap extends CordovaPlugin {
         fbAdView.loadAd();
     }
 
-    private JSONObject buildFBBannerEvent(String eventName, String eventDetail) {
-        return buildAdsEvent("banner", "fban", eventName, eventDetail);
-    }
-
-    private JSONObject buildAdsEvent(String adsType, String networkName, String eventName, String eventDetail) {
+    private JSONObject buildAdsEvent(String networkName, String eventName, String eventDetail) {
         JSONObject obj = new JSONObject();
         try {
-            obj.put("ads_type", adsType);
+            obj.put("ads_type", "banner");
             obj.put("network_name", networkName);
             obj.put("event_name", eventName);
             obj.put("event_detail", eventDetail);
