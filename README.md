@@ -7,6 +7,7 @@ Now adgap supports the following networks:
 * Mopub
 * Admob
 * mMedia
+* InMobi
 
 ## Usage
 
