@@ -29,7 +29,6 @@ public class Adgap extends CordovaPlugin {
     private View _currentAdsView = null;
     private RelativeLayout _adsContainer = null;
 
-    private CallbackContext _delayedCallbackContext;
     private CallbackContext _bannerCallbackContext;
 
     @Override
@@ -70,28 +69,6 @@ public class Adgap extends CordovaPlugin {
                 callbackContext.error(e.toString());
                 return false;
             }
-        } else if (action.equals("delayedEvent")) {
-            _delayedCallbackContext = callbackContext;
-            new Timer().schedule(
-                new TimerTask() {
-                    @Override
-                    public void run() {
-                        PluginResult result = new PluginResult(PluginResult.Status.OK, buildDummyEvent(54321));
-                        result.setKeepCallback(true);
-                        _delayedCallbackContext.sendPluginResult(result);
-
-                        result = new PluginResult(PluginResult.Status.OK, buildDummyEvent(98765));
-                        result.setKeepCallback(true);
-                        _delayedCallbackContext.sendPluginResult(result);
-                    }
-                },
-                3000
-            );
-            // dont return any result now, result will be returned later
-            PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
-            pluginResult.setKeepCallback(true);
-            callbackContext.sendPluginResult(pluginResult);
-            return true;
         } else if (action.equals("showBanner")) {
             _bannerCallbackContext = callbackContext;
             String networkName = data.optString(0);
