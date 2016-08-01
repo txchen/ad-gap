@@ -49,9 +49,7 @@ public class Adgap extends CordovaPlugin {
     private Object _currentBannerObj = null;
     private RelativeLayout _bannerContainer = null;
     private CallbackContext _bannerCallbackContext;
-    private static boolean sdkInited = false;
-
-    private static String inmobiAccountId = "";
+    private CallbackContext _initCallbackContext;
 
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
@@ -61,8 +59,8 @@ public class Adgap extends CordovaPlugin {
             return startBanner(callbackContext, data);
         } else if (action.equals("stopBanner")) {
             return stopBanner(callbackContext);
-        } else if (action.equals("setInmobiAccountId")) {
-            inmobiAccountId = data.optString(0);
+        } else if (action.equals("init")) {
+            initAdgap(callbackContext, data.optString(0));
             return true;
         } else {
             return false;
@@ -70,8 +68,39 @@ public class Adgap extends CordovaPlugin {
     }
 
     // start of top level methods
+    private void initAdgap(CallbackContext callbackContext, final String inmobiAccountId) {
+        _initCallbackContext = callbackContext;
+        final Activity activity = getActivity();
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                createBannerContainer();
+
+                // init ads sdks
+                MobileAds.initialize(activity); // admob
+                MMSDK.initialize(activity); // mm
+
+                // Inmobi
+                if (inmobiAccountId != null && !"".equals(inmobiAccountId)) {
+                    InMobiSdk.setLogLevel(InMobiSdk.LogLevel.ERROR);
+                    InMobiSdk.init(getActivity(), inmobiAccountId);
+                }
+
+                PluginResult result = new PluginResult(PluginResult.Status.OK, new JSONObject());
+                result.setKeepCallback(false);
+                _initCallbackContext.sendPluginResult(result);
+            }
+        });
+
+        String installerPackageName = getInstallerPackageName();
+        if (!"com.android.vending".equals(installerPackageName)) {
+            Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
+        } else {
+            Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
+        }
+    }
+
     private boolean startBanner(CallbackContext callbackContext, JSONArray data) {
-        init();
         _bannerCallbackContext = callbackContext;
         String networkName = data.optString(0);
         String pid = data.optString(1);
@@ -85,7 +114,6 @@ public class Adgap extends CordovaPlugin {
     }
 
     private boolean stopBanner(CallbackContext callbackContext) {
-        init();
         hideBanner();
 
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -132,35 +160,6 @@ public class Adgap extends CordovaPlugin {
         }
     }
     // end of top level methods
-
-    private void init() {
-        if (!sdkInited) {
-            final Activity activity = getActivity();
-            activity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    createBannerContainer();
-                }
-            });
-
-            String installerPackageName = getInstallerPackageName();
-            if (!"com.android.vending".equals(installerPackageName)) {
-                Log.w(LOG_TAG, String.format("installerPackageName = '%s', not from google play", installerPackageName));
-            } else {
-                Log.w(LOG_TAG, "installerPackageName is 'com.android.vending', seems this app is from google play");
-            }
-
-            // init ads sdks
-            MobileAds.initialize(activity); // admob
-            MMSDK.initialize(activity); // mm
-
-            // Inmobi
-            InMobiSdk.setLogLevel(InMobiSdk.LogLevel.ERROR);
-            InMobiSdk.init(getActivity(), inmobiAccountId);
-
-            sdkInited = true;
-        }
-    }
 
     private void createBannerContainer() {
         if (_bannerContainer != null) {

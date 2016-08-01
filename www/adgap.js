@@ -169,7 +169,7 @@ module.exports = {
 
   // PUBLIC APIs:
   // TODO: returns error, if there is something wrong
-  configBanner: function (options) {
+  configBanner: function (options, successCallback, errorCallback) {
     if (!this._inited) {
       console.log('[info] setting up onPause onResume logic')
       var self = this
@@ -194,14 +194,16 @@ module.exports = {
       console.log('[error] inmobi must have an account id, so current config is invalid, remove inmobi now.')
       delete this._bannerOptions.networks.inmobi
     }
+    var inmobiAccountId = null
     if (this._bannerOptions.networks.inmobi) {
-      cordova.exec(
-        function () { },
-        function (err) {
-          console.log('[error] failed to call setInmobiAccountId', err)
-        }, 'Adgap', 'setInmobiAccountId', [ this._bannerOptions.networks.inmobi.acctid ])
+      inmobiAccountId = this._bannerOptions.networks.inmobi.acctid
     }
     console.log('[info] The new banner config: ' + JSON.stringify(this._bannerOptions, null, 2))
+
+    cordova.exec(
+      successCallback,
+      errorCallback,
+      'Adgap', 'init', [ inmobiAccountId ])
   },
 
   startBanner: function () {

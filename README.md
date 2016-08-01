@@ -28,7 +28,7 @@ Since mMedia requires minSDKVer to be GE 16, if you get build error, then add th
 
 ### Show banner ads
 
-Then, write code to show ads, after cordova is ready, call `configBanner` fisrt:
+Then, write code to show ads, after cordova is ready, call `configBanner` and start the banner logic in the successCallback:
 
 ```js
 adgap.configBanner({
@@ -40,16 +40,12 @@ adgap.configBanner({
     mm: { name: 'mm', pid: 'YOUR_MMEDIA_PLACEMENT_ID', weight: 100, reloadSec: 25 },
     inmobi: { name: 'inmobi', pid: 'YOUR_INMOBI_PLACEMENT_ID', acctid: 'YOUR_INMOBI_ACCOUNT_ID', weight: 100, reloadSec: 25 },
   }
+}, function () { // successCallback
+  adgap.startBanner()
 })
 ```
 
-Once configuration is done, call startBanner to show the banner at bottom of your app:
-
-```js
-adgap.startBanner()
-```
-
-The plugin will auto reload banner every X seconds, so when you create placement at network, don't set the reload interval.
+The plugin will auto reload banner every X seconds, so when you create placement at network, don't enable auto reload.
 
 When the banner is loaded, or fail to load, events will be published and you can subscribe them:
 
