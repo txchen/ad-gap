@@ -60,7 +60,7 @@ public class Adgap extends CordovaPlugin {
         } else if (action.equals("stopBanner")) {
             return stopBanner(callbackContext);
         } else if (action.equals("init")) {
-            initAdgap(callbackContext, data.optString(0));
+            initAdgap(callbackContext, data.optString(0), data.optBoolean(1), data.optBoolean(2), data.optBoolean(3));
             return true;
         } else {
             return false;
@@ -68,7 +68,8 @@ public class Adgap extends CordovaPlugin {
     }
 
     // start of top level methods
-    private void initAdgap(CallbackContext callbackContext, final String inmobiAccountId) {
+    private void initAdgap(CallbackContext callbackContext, final String inmobiAccountId,
+            final boolean inmobiEnabled, final boolean admobEnabled, final boolean mmEnabled) {
         _initCallbackContext = callbackContext;
         final Activity activity = getActivity();
         activity.runOnUiThread(new Runnable() {
@@ -77,13 +78,20 @@ public class Adgap extends CordovaPlugin {
                 createBannerContainer();
 
                 // init ads sdks
-                MobileAds.initialize(activity); // admob
-                MMSDK.initialize(activity); // mm
+                if (admobEnabled) {
+                    MobileAds.initialize(activity); // admob
+                    Log.i(LOG_TAG, "admob sdk inited");
+                }
+                if (mmEnabled) {
+                    MMSDK.initialize(activity); // mm
+                    Log.i(LOG_TAG, "mm sdk inited");
+                }
 
                 // Inmobi
-                if (inmobiAccountId != null && !"".equals(inmobiAccountId)) {
+                if (inmobiEnabled && inmobiAccountId != null && !"".equals(inmobiAccountId)) {
                     InMobiSdk.setLogLevel(InMobiSdk.LogLevel.ERROR);
                     InMobiSdk.init(getActivity(), inmobiAccountId);
+                    Log.i(LOG_TAG, "inmobi sdk inited");
                 }
 
                 PluginResult result = new PluginResult(PluginResult.Status.OK, new JSONObject());

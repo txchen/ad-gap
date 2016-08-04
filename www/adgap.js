@@ -190,6 +190,10 @@ module.exports = {
         delete this._bannerOptions.networks[property]
       }
     }
+
+    var inmobiEnabled = false
+    var admobEnabled = false
+    var mmEnabled = false
     if (this._bannerOptions.networks.inmobi && this._bannerOptions.networks.inmobi.acctid === null) {
       console.log('[error] inmobi must have an account id, so current config is invalid, remove inmobi now.')
       delete this._bannerOptions.networks.inmobi
@@ -197,13 +201,23 @@ module.exports = {
     var inmobiAccountId = null
     if (this._bannerOptions.networks.inmobi) {
       inmobiAccountId = this._bannerOptions.networks.inmobi.acctid
+      inmobiEnabled = true
     }
+
+    if (this._bannerOptions.networks.admob && this._bannerOptions.networks.admob.pid) {
+      admobEnabled = true
+    }
+
+    if (this._bannerOptions.networks.mm && this._bannerOptions.networks.mm.pid) {
+      mmEnabled = true
+    }
+
     console.log('[info] The new banner config: ' + JSON.stringify(this._bannerOptions, null, 2))
 
     cordova.exec(
       successCallback,
       errorCallback,
-      'Adgap', 'init', [ inmobiAccountId ])
+      'Adgap', 'init', [ inmobiAccountId, inmobiEnabled, admobEnabled, mmEnabled ])
   },
 
   startBanner: function () {
