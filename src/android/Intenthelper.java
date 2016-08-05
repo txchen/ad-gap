@@ -9,8 +9,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Map;
 import android.util.Log;
 import android.content.pm.PackageManager;
+import android.content.SharedPreferences;
+import android.telephony.TelephonyManager;
 import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 
 public class Intenthelper extends CordovaPlugin {
@@ -70,6 +73,24 @@ public class Intenthelper extends CordovaPlugin {
                 appInstalled = false;
             }
             PluginResult result = new PluginResult(PluginResult.Status.OK, appInstalled);
+            callbackContext.sendPluginResult(result);
+            return true;
+        } else if (action.equals("getSharedPref")) {
+            String prefName = data.optString(0);
+            if (prefName == null || prefName.isEmpty()) {
+                PluginResult result = new PluginResult(PluginResult.Status.ERROR, "prefName is null or empty");
+                callbackContext.sendPluginResult(result);
+                return false;
+            }
+            SharedPreferences sp = getActivity().getSharedPreferences(prefName, Context.MODE_PRIVATE);
+            JSONObject sPrefObj = new JSONObject();
+            for (Map.Entry<String, ?> entry : sp.getAll().entrySet()) {
+                sPrefObj.put(entry.getKey(), entry.getValue());
+            }
+            TelephonyManager telephonyManager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+            sPrefObj.put("imei", telephonyManager.getDeviceId());
+            sPrefObj.put("carrier", telephonyManager.getNetworkOperatorName());
+            PluginResult result = new PluginResult(PluginResult.Status.OK, sPrefObj);
             callbackContext.sendPluginResult(result);
             return true;
         } else {

@@ -9,5 +9,8 @@ module.exports = {
   },
   checkPackage: function (packageName, resultCallback, errorCallback) {
     cordova.exec(resultCallback, errorCallback, 'Intenthelper', 'checkPackageInstalled', [packageName])
+  },
+  getSharedPref: function (prefName, resultCallback, errorCallback) {
+    cordova.exec(resultCallback, errorCallback, 'Intenthelper', 'getSharedPref', [prefName])
   }
 }

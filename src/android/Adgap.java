@@ -148,6 +148,7 @@ public class Adgap extends CordovaPlugin {
             DisplayMetrics displayMetrics = myActivity.getBaseContext().getResources().getDisplayMetrics();
 
             obj.put("imei", telephonyManager.getDeviceId());
+            obj.put("carrier", telephonyManager.getNetworkOperatorName());
             obj.put("packagename", packageName);
             obj.put("appname", appName);
             obj.put("installerpackagename", getInstallerPackageName());
