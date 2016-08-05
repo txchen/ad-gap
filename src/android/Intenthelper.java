@@ -93,6 +93,39 @@ public class Intenthelper extends CordovaPlugin {
             PluginResult result = new PluginResult(PluginResult.Status.OK, sPrefObj);
             callbackContext.sendPluginResult(result);
             return true;
+        } else if (action.equals("setSharedPref")) {
+            String prefName = data.optString(0);
+            JSONObject prefDict = data.optJSONObject(1);
+
+            if (prefName == null || prefName.isEmpty() || prefDict == null) {
+                PluginResult result = new PluginResult(PluginResult.Status.ERROR, "prefName is null or empty, or prefDict is null");
+                callbackContext.sendPluginResult(result);
+                return false;
+            }
+
+            SharedPreferences prefs = getActivity().getSharedPreferences(prefName, Context.MODE_PRIVATE);
+            SharedPreferences.Editor prefEditor = prefs.edit();
+            for (int i = 0; i < prefDict.names().length(); i++) {
+                String keyName = prefDict.names().getString(i);
+                Object val = prefDict.get(keyName);
+                // only support string, boolean and int
+                if (val instanceof Integer) {
+                    prefEditor.putInt(keyName, ((Integer) val));
+                } else if (val instanceof String) {
+                    prefEditor.putString(keyName, val.toString());
+                } else if (val instanceof Boolean) {
+                    prefEditor.putBoolean(keyName, (Boolean) val);
+                }
+            }
+            boolean success = prefEditor.commit();
+            if (!success) {
+                PluginResult result = new PluginResult(PluginResult.Status.ERROR, "prefEditor commit failed");
+                callbackContext.sendPluginResult(result);
+                return false;
+            }
+            PluginResult result = new PluginResult(PluginResult.Status.OK, "prefEditor commit succeeded");
+            callbackContext.sendPluginResult(result);
+            return true;
         } else {
             return false;
         }
