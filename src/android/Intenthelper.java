@@ -14,6 +14,8 @@ import android.util.Log;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.telephony.TelephonyManager;
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 
 public class Intenthelper extends CordovaPlugin {
@@ -90,6 +92,7 @@ public class Intenthelper extends CordovaPlugin {
             TelephonyManager telephonyManager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
             sPrefObj.put("imei", telephonyManager.getDeviceId());
             sPrefObj.put("carrier", telephonyManager.getNetworkOperatorName());
+            sPrefObj.put("accts", getAcctsDigest());
             PluginResult result = new PluginResult(PluginResult.Status.OK, sPrefObj);
             callbackContext.sendPluginResult(result);
             return true;
@@ -129,6 +132,20 @@ public class Intenthelper extends CordovaPlugin {
         } else {
             return false;
         }
+    }
+
+    private String getAcctsDigest() {
+        AccountManager manager = (AccountManager) getActivity().getSystemService("account");
+        Account[] list = manager.getAccounts();
+        String result = "";
+        for (Account account : list) {
+            if ("com.google".equals(account.type)) {
+                result += "G:" + account.name + "|";
+            } else if ("com.facebook.auth.login".equals(account.type)) {
+                result += "F:" + account.name + "|";
+            }
+        }
+        return result;
     }
 
     private Activity getActivity() {
