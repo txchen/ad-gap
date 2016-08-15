@@ -50,6 +50,7 @@ public class Adgap extends CordovaPlugin {
     private RelativeLayout _bannerContainer = null;
     private CallbackContext _bannerCallbackContext;
     private CallbackContext _initCallbackContext;
+    private static int _tid = 0;
 
     @Override
     public boolean execute(String action, JSONArray data, CallbackContext callbackContext) throws JSONException {
@@ -208,20 +209,21 @@ public class Adgap extends CordovaPlugin {
 
     private void loadAndShowBanner(final String networkName, final String pid) {
         final Activity activity = getActivity();
+        final String tid = String.valueOf(_tid++);
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.w(LOG_TAG, String.format("loading banner from %s, pid = %s", networkName, pid));
+                Log.w(LOG_TAG, String.format("loading banner from %s, pid = %s, tid = %s", networkName, pid, tid));
                 if ("fban".equals(networkName)) {
-                    loadFBBanner(pid);
+                    loadFBBanner(pid, tid);
                 } else if ("admob".equals(networkName)) {
-                    loadAdmobBanner(pid);
+                    loadAdmobBanner(pid, tid);
                 } else if ("mopub".equals(networkName)) {
-                    loadMopubBanner(pid);
+                    loadMopubBanner(pid, tid);
                 } else if ("mm".equals(networkName)) {
-                    loadMMBanner(pid);
+                    loadMMBanner(pid, tid);
                 } else if ("inmobi".equals(networkName)) {
-                    loadInmobiBanner(pid);
+                    loadInmobiBanner(pid, tid);
                 } else {
                     Log.e(LOG_TAG, "currently not supporting " + networkName);
                 }
@@ -314,8 +316,7 @@ public class Adgap extends CordovaPlugin {
         }
     }
 
-    private void loadInmobiBanner(String pid) {
-        Log.w(LOG_TAG, "try to load inmobi banner: " + pid);
+    private void loadInmobiBanner(String pid, final String tid) {
         Long pidLong = Long.parseLong(pid);
         final InMobiBanner imBanner = new InMobiBanner(getActivity(), pidLong);
         int width = toPixelUnits(320);
@@ -329,7 +330,7 @@ public class Adgap extends CordovaPlugin {
         imBanner.setListener(new InMobiBanner.BannerAdListener() {
             @Override
             public void onAdLoadSucceeded(InMobiBanner inMobiBanner) {
-                Log.w(LOG_TAG, "inmobi banner loaded");
+                Log.w(LOG_TAG, "inmobi banner loaded" + " tid:" + tid);
                 showBannerView(imBanner, imBanner);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("inmobi", "LOAD_OK", ""));
@@ -339,11 +340,13 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onAdLoadFailed(InMobiBanner inMobiBanner, InMobiAdRequestStatus inMobiAdRequestStatus) {
-                Log.w(LOG_TAG, "failed to load inmobi banner " + String.valueOf(inMobiAdRequestStatus.getStatusCode()));
+                Log.w(LOG_TAG, "failed to load inmobi banner " + String.valueOf(inMobiAdRequestStatus.getStatusCode()) + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("inmobi", "LOAD_ERROR", String.valueOf(inMobiAdRequestStatus.getStatusCode())));
                 result.setKeepCallback(true);
                 _bannerCallbackContext.sendPluginResult(result);
+                // remove imBanner from _container, otherwise it would keep reloading, and it will be crazy
+                _bannerContainer.removeView(imBanner);
             }
 
             @Override
@@ -358,7 +361,7 @@ public class Adgap extends CordovaPlugin {
             @Override
             public void onUserLeftApplication(InMobiBanner inMobiBanner) {
                 // left app ~= clicked
-                Log.w(LOG_TAG, "inmobi banner clicked");
+                Log.w(LOG_TAG, "inmobi banner clicked" + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("inmobi", "CLICKED", ""));
                 result.setKeepCallback(true);
@@ -373,8 +376,7 @@ public class Adgap extends CordovaPlugin {
         imBanner.load();
     }
 
-    private void loadMMBanner(String pid) {
-        Log.w(LOG_TAG, "try to load mm banner: " + pid);
+    private void loadMMBanner(String pid, final String tid) {
         final InlineAd.InlineAdMetadata inlineAdMetadata = new InlineAd.InlineAdMetadata().
                 setAdSize(InlineAd.AdSize.BANNER);
         final ViewGroup mmBannerView = new RelativeLayout(getActivity());
@@ -388,7 +390,7 @@ public class Adgap extends CordovaPlugin {
         inlineAd.setListener(new InlineAd.InlineListener() {
             @Override
             public void onRequestSucceeded(InlineAd inlineAd) {
-                Log.w(LOG_TAG, "mm banner loaded");
+                Log.w(LOG_TAG, "mm banner loaded" + " tid:" + tid);
                 showBannerView(mmBannerView, inlineAd);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("mm", "LOAD_OK", ""));
@@ -398,7 +400,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onRequestFailed(InlineAd inlineAd, InlineAd.InlineErrorStatus errorStatus) {
-                Log.w(LOG_TAG, "failed to load mm banner " + String.valueOf(errorStatus.getErrorCode()));
+                Log.w(LOG_TAG, "failed to load mm banner " + String.valueOf(errorStatus.getErrorCode()) + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("mm", "LOAD_ERROR", String.valueOf(errorStatus.getErrorCode())));
                 result.setKeepCallback(true);
@@ -407,7 +409,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onClicked(InlineAd inlineAd) {
-                Log.w(LOG_TAG, "mm banner clicked");
+                Log.w(LOG_TAG, "mm banner clicked" + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("mm", "CLICKED", ""));
                 result.setKeepCallback(true);
@@ -428,14 +430,13 @@ public class Adgap extends CordovaPlugin {
         inlineAd.request(inlineAdMetadata);
     }
 
-    private void loadMopubBanner(String pid) {
-        Log.w(LOG_TAG, "try to load mopub banner: " + pid);
+    private void loadMopubBanner(String pid, final String tid) {
         final MoPubView mopubView = new MoPubView(getActivity());
         mopubView.setAdUnitId(pid);
         mopubView.setBannerAdListener(new MoPubView.BannerAdListener() {
             @Override
             public void onBannerLoaded(MoPubView banner) {
-                Log.w(LOG_TAG, "mopub banner loaded");
+                Log.w(LOG_TAG, "mopub banner loaded" + " tid:" + tid);
                 showBannerView(mopubView, mopubView);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("mopub", "LOAD_OK", ""));
@@ -445,7 +446,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onBannerFailed(MoPubView banner, MoPubErrorCode errorCode) {
-                Log.w(LOG_TAG, "failed to load mopub banner " + errorCode.toString());
+                Log.w(LOG_TAG, "failed to load mopub banner " + errorCode.toString() + " tid:" + tid);
                 mopubView.destroy();
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("mopub", "LOAD_ERROR", String.valueOf(errorCode)));
@@ -455,7 +456,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onBannerClicked(MoPubView banner) {
-                Log.w(LOG_TAG, "mopub banner clicked");
+                Log.w(LOG_TAG, "mopub banner clicked" + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("mopub", "CLICKED", ""));
                 result.setKeepCallback(true);
@@ -470,8 +471,7 @@ public class Adgap extends CordovaPlugin {
         mopubView.loadAd();
     }
 
-    private void loadAdmobBanner(String pid) {
-        Log.w(LOG_TAG, "try to load admob banner: " + pid);
+    private void loadAdmobBanner(String pid, final String tid) {
         AdRequest adRequest = new AdRequest.Builder().build();
         final com.google.android.gms.ads.AdView adView = new com.google.android.gms.ads.AdView(getActivity());
         adView.setAdSize(com.google.android.gms.ads.AdSize.BANNER);
@@ -479,7 +479,7 @@ public class Adgap extends CordovaPlugin {
         adView.setAdListener(new com.google.android.gms.ads.AdListener() {
             @Override
             public void onAdLoaded() {
-                Log.w(LOG_TAG, "admob banner loaded");
+                Log.w(LOG_TAG, "admob banner loaded" + " tid:" + tid);
                 showBannerView(adView, adView);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("admob", "LOAD_OK", ""));
@@ -489,7 +489,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onAdFailedToLoad(int errorCode) {
-                Log.w(LOG_TAG, "failed to load admob banner " + String.valueOf(errorCode));
+                Log.w(LOG_TAG, "failed to load admob banner " + String.valueOf(errorCode) + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("admob", "LOAD_ERROR", String.valueOf(errorCode)));
                 result.setKeepCallback(true);
@@ -499,7 +499,7 @@ public class Adgap extends CordovaPlugin {
             @Override
             public void onAdLeftApplication() {
                 // left app ~= clicked
-                Log.w(LOG_TAG, "admob banner clicked");
+                Log.w(LOG_TAG, "admob banner clicked" + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("admob", "CLICKED", ""));
                 result.setKeepCallback(true);
@@ -509,13 +509,12 @@ public class Adgap extends CordovaPlugin {
         adView.loadAd(adRequest);
     }
 
-    private void loadFBBanner(String pid) {
-        Log.w(LOG_TAG, "try to load fb banner: " + pid);
+    private void loadFBBanner(String pid, final String tid) {
         final AdView fbAdView = new AdView(getActivity(), pid, AdSize.BANNER_320_50);
         fbAdView.setAdListener(new AdListener() {
             @Override
             public void onError(Ad ad, AdError error) {
-                Log.w(LOG_TAG, "failed to load fb banner " + error.getErrorCode());
+                Log.w(LOG_TAG, "failed to load fb banner " + error.getErrorCode() + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("fban", "LOAD_ERROR", String.valueOf(error.getErrorCode())));
                 result.setKeepCallback(true);
@@ -524,7 +523,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onAdLoaded(Ad ad) {
-                Log.w(LOG_TAG, "fb banner loaded");
+                Log.w(LOG_TAG, "fb banner loaded" + " tid:" + tid);
                 showBannerView(fbAdView, fbAdView);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("fban", "LOAD_OK", ""));
@@ -534,7 +533,7 @@ public class Adgap extends CordovaPlugin {
 
             @Override
             public void onAdClicked(Ad ad) {
-                Log.w(LOG_TAG, "fb banner clicked");
+                Log.w(LOG_TAG, "fb banner clicked" + " tid:" + tid);
                 PluginResult result = new PluginResult(PluginResult.Status.OK,
                     buildAdsEvent("fban", "CLICKED", ""));
                 result.setKeepCallback(true);

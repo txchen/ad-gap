@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-adgap",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "description": "show ads in your cordova app",
   "scripts": {
   },

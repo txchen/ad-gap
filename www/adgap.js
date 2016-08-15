@@ -55,14 +55,14 @@ module.exports = {
 
   /////////  states
   _bannerOptions: {
-    reloadSec: 26, // global reloadSec
-    cooldownSec: 8,
+    reloadSec: 20, // global reloadSec
+    cooldownSec: 8, // global cooldownSec
     networks: {
-      fban: { name: 'fban', pid: null, weight: 100, reloadSec: 25 },
-      admob: { name: 'admob', pid: null, weight: 100, reloadSec: 25 },
-      mopub: { name: 'mopub', pid: null, weight: 100, reloadSec: 25 },
-      mm: { name: 'mm', pid: null, weight: 100, reloadSec: 25 },
-      inmobi: { name: 'inmobi', pid: null, acctid: null, weight: 100, reloadSec: 25 },
+      fban: { name: 'fban', pid: null, weight: 100, reloadSec: 25, cooldownSec: 15 },
+      admob: { name: 'admob', pid: null, weight: 100, reloadSec: 25, cooldownSec: 15 },
+      mopub: { name: 'mopub', pid: null, weight: 100, reloadSec: 25, cooldownSec: 15 },
+      mm: { name: 'mm', pid: null, weight: 100, reloadSec: 25, cooldownSec: 15 },
+      inmobi: { name: 'inmobi', pid: null, acctid: null, weight: 100, reloadSec: 25, cooldownSec: 15 },
     },
   },
   _bannerStates: {
@@ -115,10 +115,13 @@ module.exports = {
       // if network level reloadSec is not provided, use the global one instead
       var networkReloadSec = networkConfig.reloadSec || this._bannerOptions.reloadSec
       // pid must be available, and lastLoadedTime must be early enough
-      if (networkConfig.pid && (now - this._bannerStates.networks[n].lastLoadedTime) > networkReloadSec) {
-        //console.log('network ' + n + ' is an available candidate to load')
-        networks.push(networkConfig)
-        networkNames.push(n)
+      if (networkConfig.pid && (now - this._bannerStates.networks[n].lastLoadedTime) > 1000 * networkReloadSec) {
+        // reloadSec check passed, now check the cooldown
+        if ((now - this._bannerStates.networks[n].lastAttemptTime) > 1000 * networkConfig.cooldownSec) {
+          // both reloadSec and cooldownSec check passed, now pick this one
+          networks.push(networkConfig)
+          networkNames.push(n)
+        }
       }
     }
     if (!networks.length) {
@@ -146,6 +149,7 @@ module.exports = {
     this._bannerStates.networks[network.name].lastAttemptTime = now.getTime()
 
     var self = this
+    console.log('[info] call java to load banner from network - ' + network.name)
     cordova.exec(
       function (adsEvent) {
         if (adsEvent) {
@@ -164,7 +168,6 @@ module.exports = {
         cordova.fireWindowEvent("adgap_show_banner_failure",
           { type: 'show_banner_failure', error: err })
       }, 'Adgap', 'showBanner', [network.name, network.pid])
-    console.log('[info] call java to load banner from network - ' + network.name)
   },
 
   // PUBLIC APIs:
