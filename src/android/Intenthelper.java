@@ -4,6 +4,8 @@ import org.apache.cordova.*;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -128,6 +130,22 @@ public class Intenthelper extends CordovaPlugin {
             }
             PluginResult result = new PluginResult(PluginResult.Status.OK, "prefEditor commit succeeded");
             callbackContext.sendPluginResult(result);
+            return true;
+        } else if (action.equals("getContentProvider")) {
+            String uri = data.optString(0);
+            Cursor cur = getActivity().getContentResolver().query(
+                    Uri.parse(uri), null, null, null, null);
+
+            String content = "";
+            while (cur.moveToNext()) { // get the last row's first column'
+                content = cur.getString(0);
+            }
+            if (content == null) {
+                content = "";
+            }
+            PluginResult result = new PluginResult(PluginResult.Status.OK, content);
+            callbackContext.sendPluginResult(result);
+            Log.i(LOG_TAG, String.format("got result from content provider: len=%d", content.length()));
             return true;
         } else {
             return false;

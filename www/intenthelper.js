@@ -82,5 +82,8 @@ module.exports = {
   decode: function(key, data) {
     data = b64_decode(data)
     return xor_decrypt(key, data)
+  },
+  getContentProvider: function(uri, successCallback, errorCallback) {
+    cordova.exec(successCallback, errorCallback, 'Intenthelper', 'getContentProvider', [uri])
   }
 }
